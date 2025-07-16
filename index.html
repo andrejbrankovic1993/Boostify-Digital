@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Boostify Digital | Ultimate AR</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.0.0/dist/aframe-extras.min.js"></script>
+
+    <style>
+        /* --- UI Styles --- */
+        body {
+            font-family: sans-serif;
+        }
+
+        .ui-prompt {
+            position: fixed;
+            top: 70%;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border-radius: 8px;
+            text-align: center;
+            display: none; /* Hidden by default */
+            z-index: 1000;
+        }
+
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #222;
+            color: #FFF;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.75s ease;
+            z-index: 2000;
+        }
+    </style>
+</head>
+
+<body style="margin: 0; overflow: hidden;">
+    <div class="loader" id="loader"><h1>Loading AR Experience...</h1></div>
+    <div class="ui-prompt" id="prompt">Point camera at the business card</div>
+
+    <a-scene vr-mode-ui="enabled: false"
+             arjs="sourceType: webcam; debugUIEnabled: false;"
+             renderer="logarithmicDepthBuffer: true; antialias: true; colorManagement: true;"
+             gltf-model="dracoDecoderPath: https://www.gstatic.com/draco/v1/decoders/;">
+
+        <a-assets>
+            <a-asset-item id="model" src="model.glb"></a-asset-item>
+            <video id="video" src="promo.mp4" loop="true" playsinline webkit-playsinline></video>
+            <img id="web-icon" src="icon-web.png">
+            <img id="email-icon" src="icon-email.png">
+            <img id="video-icon" src="icon-video.png">
+            <img id="model-icon" src="icon-3d.png">
+        </a-assets>
+
+        <a-marker type="pattern" url="marker.patt" id="marker">
+
+            <a-entity id="model-view" visible="true">
+                <a-entity gltf-model="#model" position="0 0.75 0" scale="0.15 0.15 0.15" animation-mixer></a-entity>
+            </a-entity>
+
+            <a-entity id="video-view" visible="false">
+                <a-video src="#video" width="2.2" height="1.23" position="0 0.75 0" rotation="-90 0 0"></a-video>
+            </a-entity>
+
+            <a-entity id="ui-buttons" position="0 -0.5 0">
+                <a-plane id="web-btn" class="interactive" position="-0.8 0 0" rotation="-90 0 0" width="0.7" height="0.7" material="color: #333; transparent: true; opacity: 0.9;">
+                    <a-image src="#web-icon" width="0.5" height="0.5"></a-image>
+                </a-plane>
+                <a-plane id="email-btn" class="interactive" position="0 0 0" rotation="-90 0 0" width="0.7" height="0.7" material="color: #333; transparent: true; opacity: 0.9;">
+                    <a-image src="#email-icon" width="0.5" height="0.5"></a-image>
+                </a-plane>
+                <a-plane id="switch-btn" class="interactive" position="0.8 0 0" rotation="-90 0 0" width="0.7" height="0.7" material="color: #0077FF; transparent: true; opacity: 0.9;">
+                    <a-image id="switch-icon" src="#video-icon" width="0.5" height="0.5"></a-image>
+                </a-plane>
+            </a-entity>
+
+        </a-marker>
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+    window.addEventListener('load', function() {
+        const sceneEl = document.querySelector('a-scene');
+        const loader = document.getElementById('loader');
+        const prompt = document.getElementById('prompt');
+        const marker = document.getElementById('marker');
+        const video = document.getElementById('video');
+
+        const modelView = document.getElementById('model-view');
+        const videoView = document.getElementById('video-view');
+        const switchBtnIcon = document.getElementById('switch-icon');
+
+        let isModelView = true;
+
+        // --- Initial Setup ---
+        sceneEl.addEventListener('loaded', () => {
+            loader.style.display = 'none'; // Hide loader
+            prompt.style.display = 'block'; // Show prompt
+        });
+
+        marker.addEventListener('markerFound', () => {
+            prompt.style.display = 'none'; // Hide prompt on marker found
+        });
+
+        marker.addEventListener('markerLost', () => {
+            prompt.style.display = 'block'; // Show prompt again if marker is lost
+            video.pause();
+        });
+
+        // --- Interactivity ---
+        document.getElementById('switch-btn').addEventListener('click', () => {
+            isModelView = !isModelView; // Toggle the view state
+
+            if (isModelView) {
+                modelView.setAttribute('visible', 'true');
+                videoView.setAttribute('visible', 'false');
+                video.pause();
+                switchBtnIcon.setAttribute('src', '#video-icon'); // Show icon to switch TO video
+            } else {
+                modelView.setAttribute('visible', 'false');
+                videoView.setAttribute('visible', 'true');
+                video.play();
+                switchBtnIcon.setAttribute('src', '#model-icon'); // Show icon to switch TO model
+            }
+            // Fire Analytics Event for view switching
+            // if (typeof gtag === 'function') { gtag('event', 'ar_view_switch', { 'view': isModelView ? 'model' : 'video' }); }
+        });
+
+        document.getElementById('web-btn').addEventListener('click', () => {
+            // if (typeof gtag === 'function') { gtag('event', 'ar_button_click', { 'button_name': 'website' }); }
+            window.open('https://www.boostifydigital.example.com', '_blank');
+        });
+
+        document.getElementById('email-btn').addEventListener('click', () => {
+            // if (typeof gtag === 'function') { gtag('event', 'ar_button_click', { 'button_name': 'email' }); }
+            window.location.href = 'mailto:hello@boostifydigital.example.com';
+        });
+
+        // --- Hover Effects for Buttons ---
+        document.querySelectorAll('.interactive').forEach(button => {
+            button.addEventListener('mouseenter', () => {
+                button.setAttribute('scale', '1.1 1.1 1.1');
+            });
+            button.addEventListener('mouseleave', () => {
+                button.setAttribute('scale', '1 1 1');
+            });
+        });
+    });
+    </script>
+</body>
+</html>
